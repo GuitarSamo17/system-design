@@ -30,4 +30,18 @@ class TrabajadorConfiable:
         #   self.cola, para que no vuelva.
         # - Si fallo y le quedan intentos, no lo confirmes.
         # En los tres casos, devuelve True.
-        raise NotImplementedError
+        mensaje = self.cola.recibir()
+        if mensaje is None:
+            return False
+            
+        cuerpo = mensaje["cuerpo"]
+        enviado = self.correo.enviar(cuerpo["estudiante"], asunto_de_confirmacion(cuerpo))
+        
+        if enviado:
+            self.cola.confirmar(mensaje["id"])
+        else:
+            if mensaje["intentos"] >= self.max_intentos:
+                self.cola_de_muertos.publicar(cuerpo)
+                self.cola.confirmar(mensaje["id"])
+                
+        return True
