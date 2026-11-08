@@ -36,14 +36,15 @@ class ServicioConCacheAside:
         # guardado sin tocar el repositorio. Si no esta, cuenta un fallo,
         # consulta el repositorio, guarda la respuesta en self.cache y
         # devuelvela.
-        clave = (cancha,fecha)
+        clave = (cancha, fecha)
 
         if clave in self.cache:
-            self.aciertos +=1
-            return self.cache(clave)
-        self.fallos +=1
+            self.aciertos += 1
+            return self.cache[clave]
+            
+        self.fallos += 1
         disponible = self.repositorio.consultar_disponibilidad(cancha, fecha)
-        self.cache(clave)= disponible
+        self.cache[clave] = disponible
         return disponible
 
 def medir(servicio, repeticiones):
