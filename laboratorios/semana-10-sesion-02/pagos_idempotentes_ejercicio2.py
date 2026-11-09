@@ -36,4 +36,24 @@ class ApiDePagos:
         #   self.pasarela.cobrar(estudiante, monto), arma la respuesta 201
         #   con {"id": id del cobro, "reserva_id": ..., "monto": ...},
         #   guardala junto con el cuerpo de la solicitud, y devuelvela.
-        raise NotImplementedError
+        clave = solicitud.cabeceras.get("Idempotency-Key")
+        if not clave:
+            return Respuesta(400, {"error": "falta Idempotency-Key"})
+
+        if clave in self.respuestas_guardadas:
+            cuerpo_guardado, respuesta_guardada = self.respuestas_guardadas[clave]
+            if solicitud.cuerpo == cuerpo_guardado:
+                return respuesta_guardada
+            else:
+                return Respuesta(422, {"error": "clave usada con otro cuerpo"})
+
+        reserva = self.repositorio.buscar(solicitud.cuerpo["reserva_id"])
+        if reserva is None:
+            return Respuesta(404, {"error": "reserva desconocida"})
+
+        id_cobro = self.pasarela.cobrar(reserva["estudiante"], solicitud.cuerpo["monto"])
+        cuerpo_respuesta = {"id": id_cobro, "reserva_id": reserva["id"], "monto": solicitud.cuerpo["monto"]}
+        respuesta = Respuesta(201, cuerpo_respuesta)
+        
+        self.respuestas_guardadas[clave] = (solicitud.cuerpo, respuesta)
+        return respuesta

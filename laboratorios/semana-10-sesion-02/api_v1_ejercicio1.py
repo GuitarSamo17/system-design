@@ -38,9 +38,9 @@ class ApiReservaU:
         # TODO 1: si la cancha no esta en CANCHAS, responde 404 con
         # {"error": "cancha desconocida"}. Si esta, responde 200 con
         # {"cancha": ..., "fecha": ..., "libres": [...]}.
-        if cancga not in CANCHAS:
-            return Respuesta(404,{'error':'cancha desconocida'})
-        return Respuesta(201,{'cancha':cancha, 'fecha': fecha, 'libre':self.repositorio.libres(cancha,fecha)})
+        if cancha not in CANCHAS:
+            return Respuesta(404, {"error": "cancha desconocida"})
+        return Respuesta(200, {"cancha": cancha, "fecha": fecha, "libres": self.repositorio.libres(cancha, fecha)})
 
     def crear_reserva(self, cuerpo):
         # TODO 2: en este orden,
@@ -52,14 +52,16 @@ class ApiReservaU:
         #   reserva creada (id, estudiante, cancha, fecha, hora).
         for campo in CAMPOS_DE_RESERVA:
             if campo not in cuerpo:
-                return Respuesta(404,{'error':'faltan campos obligatorios'})
-            if cuerpo['cancha'] not in CANCHAS:
-                return Respuesta(404,{'error':'cancha desconocida'})
-            if self.repositorio.ocupada(cuerpo['cancha'],cuerpo['fecha'],cuerpo['hora']):
-                return Respuesta(409,{'error':'fecha y hora ocupada'})
-            reserva = self.repositorio.crear(cuerpo['estudiante'],cuerpo['cancha'])
-
-            return Respuesta(201, reserva)
+                return Respuesta(400, {"error": "faltan campos"})
+                
+        if cuerpo["cancha"] not in CANCHAS:
+            return Respuesta(404, {"error": "cancha desconocida"})
+            
+        if self.repositorio.ocupada(cuerpo["cancha"], cuerpo["fecha"], cuerpo["hora"]):
+            return Respuesta(409, {"error": "hora ocupada"})
+            
+        reserva = self.repositorio.crear(cuerpo["estudiante"], cuerpo["cancha"], cuerpo["fecha"], cuerpo["hora"])
+        return Respuesta(201, reserva)
 
     def crear_pago(self, cuerpo):
         reserva = self.repositorio.buscar(cuerpo["reserva_id"])
