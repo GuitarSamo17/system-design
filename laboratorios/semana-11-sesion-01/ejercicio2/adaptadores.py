@@ -104,6 +104,9 @@ class NotificadorEnMemoria(Notificador):
     # tupla (estudiante, mensaje), en el orden en que llegan.
     def __init__(self):
         self.enviados = []
+        
+    def notificar(self, estudiante, mensaje):
+        self.enviados.append((estudiante, mensaje))
 
 
 class AdaptadorDeMensajeria:
@@ -120,4 +123,19 @@ class AdaptadorDeMensajeria:
         # Si no, llama al caso de uso y responde
         # "Listo: reserva r-1, cancha-1, 2026-11-10 a las 18:00" o
         # "No se pudo reservar: hora ocupada" (con el motivo que sea).
-        raise NotImplementedError
+        palabras = texto.split()
+        
+        if len(palabras) != 4 or palabras[0] != "reservar" or not palabras[3].isdigit():
+            return "No entendi. Escribe: reservar <cancha> <fecha> <hora>"
+            
+        cancha = palabras[1]
+        fecha = palabras[2]
+        hora = int(palabras[3])
+        
+        resultado = self.reservar_cancha.ejecutar(estudiante, cancha, fecha, hora)
+        
+        if resultado["estado"] == "rechazada":
+            return "No se pudo reservar: " + resultado["motivo"]
+            
+        reserva = resultado["reserva"]
+        return "Listo: reserva " + reserva.id + ", " + reserva.cancha + ", " + reserva.fecha + " a las " + texto_de_hora(reserva.hora)
