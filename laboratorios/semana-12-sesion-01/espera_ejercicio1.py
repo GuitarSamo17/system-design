@@ -42,7 +42,6 @@ def simular_consultas(intervalo_segundos):
 
 
 # ---------------------------------------------------------------- Parte B
-
 class ObservadorDeCalendario:
     """Lo que el calendario sabe de quien se suscribe: que tiene este metodo."""
 
@@ -51,14 +50,25 @@ class ObservadorDeCalendario:
 
 
 class CalendarioObservable(CalendarioDeCancha):
-    # TODO 1: en __init__, ademas de lo que hace CalendarioDeCancha, una
-    # lista vacia de observadores. Escribe suscribir(observador), que lo
-    # agrega a esa lista.
 
-    # TODO 2: sobrescribe cancelar. Guarda la franja de la reserva, cancela
-    # como lo hace CalendarioDeCancha, y despues llama al_liberarse(cancha,
-    # franja) de cada observador, en el orden en que se suscribieron.
-    pass
+    def __init__(self, cancha, fecha):
+        super().__init__(cancha, fecha)
+        self._observadores = []
+
+    def suscribir(self, observador: ObservadorDeCalendario):
+        if observador not in self._observadores:
+            self._observadores.append(observador)
+
+    def cancelar(self, id_reserva):
+
+        franja = self.franja_de(id_reserva)
+
+        super().cancelar(id_reserva)
+
+        for observador in self._observadores:
+            observador.al_liberarse(self.cancha, franja)
+
+    
 
 
 class ListaDeEspera(ObservadorDeCalendario):
@@ -67,35 +77,21 @@ class ListaDeEspera(ObservadorDeCalendario):
         self.esperando = {}
 
     def anotar(self, estudiante, franja):
-        # TODO 3: agrega al estudiante al final de la lista de esa franja
-        # (self.esperando[franja] es una lista). Despues escribe
-        # al_liberarse: si alguien espera esa franja, saca al primero de la
-        # lista y le envia, con el notificador:
-        #     "Se libero cancha-1 el 2026-11-10 de 18 a 19"
-        # Si nadie la espera, no hace nada.
-        raise NotImplementedError
 
+        if franja not in self.esperando:
 
-if __name__ == "__main__":
-    print("Parte A: consultando")
-    for intervalo in [30, 300]:
-        consultas, segundo = simular_consultas(intervalo)
-        print("  Cada", intervalo, "s: beto se entera en el segundo", segundo, "despues de", consultas, "consultas")
-    consultas, segundo = simular_consultas(30)
-    print("  2000 estudiantes esperando, cada 30 s:", 2000 * consultas, "consultas")
+            self.esperando[franja] = []
 
-    print("Parte B: con Observer")
-    notificador = NotificadorEnMemoria()
-    lista = ListaDeEspera(notificador)
-    calendario = CalendarioObservable("cancha-1", "2026-11-10")
-    calendario.suscribir(lista)
-    calendario.reservar("r-1", "ana", 18, 19)
-    calendario.reservar("r-2", "carla", 9, 10)
-    lista.anotar("beto", FranjaHoraria("2026-11-10", 18, 19))
-    lista.anotar("dani", FranjaHoraria("2026-11-10", 18, 19))
+        self.esperando[franja].append(estudiante)
 
-    calendario.cancelar("r-2")
-    calendario.cancelar("r-1")
-    for destinatario, texto in notificador.enviados:
-        print(" ", destinatario, "<-", texto)
-    print("  Siguen esperando 18-19:", lista.esperando[FranjaHoraria("2026-11-10", 18, 19)])
+    def al_liberarse(self, cancha, franja):
+
+        if len(self.esperando.get(franja, [])) == 0:
+
+            return
+
+        primero = self.esperando[franja].pop(0)
+
+        notificacion = f'Se libero {cancha} el {franja.fecha} de {franja.inicio} a {franja.fin}'
+
+        self.notificador.enviar(primero, notificacion)
