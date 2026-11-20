@@ -33,8 +33,17 @@ class CanalesQueLimpian(Canales):
         # no les llego (estan cerradas) se quitan del tema. No quites
         # elementos de la lista mientras la recorres: junta primero las
         # cerradas y quitalas despues, con desuscribir.
-        raise NotImplementedError
-
+        
+        entregados = 0
+        cerradas = []
+        for conexion in self.suscritos.get(tema, []):
+            if conexion.enviar(mensaje):
+                entregados += 1
+            else:
+                cerradas.append(conexion)
+        for conexion in cerradas:
+            self.desuscribir(tema, conexion)
+        return entregados
 
 class BusEntreServidores:
     def __init__(self):
@@ -58,7 +67,12 @@ class BusEntreServidores:
         # suma de lo que devuelve cada servidor). Ojo: un servidor que se
         # queda sin conexiones se desuscribe del bus mientras recibe;
         # recorre una copia de la lista ([:]).
-        raise NotImplementedError
+        
+        total = 0
+        for servidor in self.servidores_por_tema.get(tema, [])[:]:
+            self.envios += 1
+            total += servidor.recibir_del_bus(tema, mensaje)
+        return total
 
 
 class ServidorDeConexiones:
@@ -71,12 +85,17 @@ class ServidorDeConexiones:
         # TODO 2: suscribe la conexion al tema en self.canales. Si es la
         # primera conexion de este servidor en ese tema, suscribe el
         # servidor al tema en el bus.
-        raise NotImplementedError
+        era_vacio = self.canales.suscriptores(tema) == 0
+        self.canales.suscribir(tema, conexion)
+        if era_vacio and self.canales.suscriptores(tema) > 0:
+            self.bus.suscribir(tema, self)
 
     def desconectar(self, conexion, tema):
         # TODO 3: desuscribe la conexion del tema. Si el servidor se quedo sin
         # conexiones en ese tema, desuscribe el servidor del bus.
-        raise NotImplementedError
+        self.canales.desuscribir(tema, conexion)
+        if self.canales.suscriptores(tema) == 0:
+            self.bus.desuscribir(tema, self)
 
     def recibir_del_bus(self, tema, mensaje):
         entregados = self.canales.publicar(tema, mensaje)
