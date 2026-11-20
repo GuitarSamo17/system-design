@@ -68,7 +68,21 @@ class Reservable(Recurso):
 
     # TODO 4 (hoja): rutas devuelve [ruta + self.nombre] en los mismos
     # casos en que buscar devuelve [self.nombre].
+    def buscar(self, tipo, inicio, fin):
+        if self.tipo == tipo and self.calendario.esta_libre(inicio, fin):
+            return [self.nombre]
+        return []
 
+    def contar(self, tipo):
+        return 1 if self.tipo == tipo else 0
+
+    def encontrar(self, nombre):
+        return self if self.nombre == nombre else None
+
+    def rutas(self, tipo, inicio, fin, ruta):
+        if self.tipo == tipo and self.calendario.esta_libre(inicio, fin):
+            return [ruta + self.nombre]
+        return []
 
 class Grupo(Recurso):
     def __init__(self, nombre):
@@ -86,7 +100,28 @@ class Grupo(Recurso):
 
     # TODO 4 (compuesto): rutas junta lo que devuelve cada hijo, pasandole
     # ruta + self.nombre + " / ".
+    def buscar(self, tipo, inicio, fin):
+        encontrados = []
+        for hijo in self.hijos:
+            encontrados.extend(hijo.buscar(tipo, inicio, fin))
+        return encontrados
 
+    def contar(self, tipo):
+        return sum(hijo.contar(tipo) for hijo in self.hijos)
+
+    def encontrar(self, nombre):
+        for hijo in self.hijos:
+            resultado = hijo.encontrar(nombre)
+            if resultado is not None:
+                return resultado
+        return None
+
+    def rutas(self, tipo, inicio, fin, ruta):
+        encontrados = []
+        nueva_ruta = ruta + self.nombre + " / "
+        for hijo in self.hijos:
+            encontrados.extend(hijo.rutas(tipo, inicio, fin, nueva_ruta))
+        return encontrados
 
 def reservar_en(raiz, nombre, id_reserva, estudiante, inicio, fin):
     reservable = raiz.encontrar(nombre)
