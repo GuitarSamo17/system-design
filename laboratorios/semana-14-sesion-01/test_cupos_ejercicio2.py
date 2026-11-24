@@ -21,3 +21,55 @@ from cupos_ejercicio2 import CupoSemanal
 def test_sin_reservas_puede_reservar():
     cupo = CupoSemanal()
     assert cupo.puede_reservar("ana", "2026-11-16")
+import pytest
+
+
+def test_con_dos_reservas_todavia_puede():
+    cupo = CupoSemanal()
+    cupo.registrar("r1", "ana", "2026-11-16")
+    cupo.registrar("r2", "ana", "2026-11-18")
+    assert cupo.puede_reservar("ana", "2026-11-20")
+
+
+def test_con_tres_reservas_ya_no_puede():
+    cupo = CupoSemanal()
+    cupo.registrar("r1", "ana", "2026-11-16")
+    cupo.registrar("r2", "ana", "2026-11-18")
+    cupo.registrar("r3", "ana", "2026-11-22")
+    assert not cupo.puede_reservar("ana", "2026-11-20")
+
+
+def test_reservas_de_otra_semana_no_cuentan():
+    cupo = CupoSemanal()
+    cupo.registrar("r1", "ana", "2026-11-16")
+    cupo.registrar("r2", "ana", "2026-11-18")
+    cupo.registrar("r3", "ana", "2026-11-22")
+    assert cupo.puede_reservar("ana", "2026-11-23")
+
+
+def test_cancelar_libera_su_lugar():
+    cupo = CupoSemanal()
+    cupo.registrar("r1", "ana", "2026-11-16")
+    cupo.registrar("r2", "ana", "2026-11-18")
+    cupo.registrar("r3", "ana", "2026-11-22")
+    cupo.cancelar("r2")
+    assert cupo.puede_reservar("ana", "2026-11-20")
+
+
+def test_equipo_oficial_tiene_seis_reservas():
+    cupo = CupoSemanal()
+    cupo.registrar_equipo_oficial("futbol")
+    for i in range(6):
+        cupo.registrar(f"f{i}", "futbol", "2026-11-16")
+    assert not cupo.puede_reservar("futbol", "2026-11-18")
+
+
+def test_cuarta_reserva_lanza_y_mantiene_tres():
+    cupo = CupoSemanal()
+    cupo.registrar("r1", "ana", "2026-11-16")
+    cupo.registrar("r2", "ana", "2026-11-18")
+    cupo.registrar("r3", "ana", "2026-11-22")
+    with pytest.raises(ValueError, match="cupo semanal agotado"):
+        cupo.registrar("r4", "ana", "2026-11-19")
+    cupo.cancelar("r1")
+    assert cupo.puede_reservar("ana", "2026-11-19")
